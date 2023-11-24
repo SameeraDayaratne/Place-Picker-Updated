@@ -1,12 +1,13 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback , useEffect } from "react";
 
 import Places from "./components/Places.jsx";
 import Modal from "./components/Modal.jsx";
 import DeleteConfirmation from "./components/DeleteConfirmation.jsx";
 import logoImg from "./assets/logo.png";
 import AvailablePlaces from "./components/AvailablePlaces.jsx";
-import { storeUserPlaces } from "./http.js";
+import { storeUserPlaces , fetchSelectedPlaces } from "./http.js";
 import Error from "./components/Error.jsx";
+
 
 function App() {
   const selectedPlace = useRef();
@@ -15,6 +16,24 @@ function App() {
   const [error, setError] = useState();
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
+
+
+  useEffect(()=>{
+
+    async function getSelectedPlaces(){
+
+      try {
+        const pickedPlaces = await fetchSelectedPlaces();
+
+        setUserPlaces(pickedPlaces);
+      } catch (error) {
+        ////
+      }
+      
+    }
+    getSelectedPlaces();
+
+  },[]);
 
   function handleStartRemovePlace(place) {
     setModalIsOpen(true);
@@ -50,9 +69,19 @@ function App() {
     setUserPlaces((prevPickedPlaces) =>
       prevPickedPlaces.filter((place) => place.id !== selectedPlace.current.id)
     );
-
+    try {
+      await storeUserPlaces(
+        userPlaces.filter(places => places.id !== selectedPlace.current.id)
+      )
+    } catch (error) {
+      setUserPlaces(userPlaces);
+      setError({
+        message: error.message || "An error occured while deleting place",
+      });
+    }
+   
     setModalIsOpen(false);
-  }, []);
+  }, [userPlaces]);
 
   function handleError() {
     setError(null);
